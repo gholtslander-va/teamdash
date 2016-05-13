@@ -1,0 +1,19 @@
+<h3>Members</h3>
+<table class="table table-striped">
+    <tbody>
+    {% for member in members %}
+    <tr>
+        <td class="col-md-1">
+            <img src="{{ member.pic }}" height="21">
+        </td>
+        <td>
+            {% if member.name == None %}
+            <a href="{{ member.url }}" target="_blank">{{ member.username }}</a>
+            {% else %}
+            <a href="{{ member.url }}" target="_blank">{{ member.name }}</a>
+            {% endif %}
+        </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>

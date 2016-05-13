@@ -1,0 +1,25 @@
+<h3>
+    <a href="https://github.com/search?q=is:pr+team:{{ org }}/{{ team_name_encoded }}" target="_blank">Pull Requests</a>
+</h3>
+{% if pulls %}
+<table class="table table-striped">
+    <tbody>
+    {% for pull in pulls %}
+    <tr>
+        <td>
+            <img src="img/{{ pull.state }}.png" height="21">
+        </td>
+        <td>
+            <a href="{{ pull.url }}" target="_blank">{{ pull.repo }} #{{ pull.number }}: {{ pull.title }}</a>
+        </td>
+        <td>
+            <i class="fa fa-comment-o" aria-hidden="true"></i> {{ pull.comments }}
+        </td>
+        <td>
+            <a href="https://github.com/{{ pull.user.login }}" target="_blank">{{ pull.user.login }}</a>
+        </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endif %}
