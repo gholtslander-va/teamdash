@@ -18,22 +18,109 @@ import os
 
 import webapp2
 from github import Github
+from google.appengine.ext import ndb
+from google.appengine.ext import db
 from google.appengine.ext.webapp import template
+from google.appengine.api import users
 
-TOKEN = "47d418c077b06cd8788bef092a48d67dd9cf0db4"
+TOKEN = ""
 ORG = "vendasta"
 TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), 'templates')
 
 
-class DashHandler(webapp2.RequestHandler):
+class BaseHandler(webapp2.RequestHandler):
+
+    user = None
+    logout_url = ""
+
+    def dispatch(self):
+        user = users.get_current_user()
+        if user:
+            user_domain = user.email().split('@')[1]
+            self.logout_url = users.create_logout_url('/')
+            if user.email().split('@')[1] == 'vendasta.com':
+                if self.request.path == '/token':
+                    super(BaseHandler, self).dispatch()
+                else:
+                    self.check_user(user)
+            else:
+                self.response.write('Must be logged in with a vendasta.com account.  <a href="%s">Sign Out</a>' % self.logout_url)
+        else:
+            login_url = users.create_login_url(self.request.url)
+            self.redirect(login_url)
+
+    def check_user(self, user):
+        db_user = self.get_current_user_from_database()
+        if db_user:
+            print 'user exists'
+            print self.request.relative_url('/')
+            if db_user.github_token:
+                global TOKEN
+                TOKEN = db_user.github_token
+                super(BaseHandler, self).dispatch()
+            else:
+                self.redirect('/token')
+        else:
+            print 'user does not exist in the database'
+            db_user = User(user_id=user.user_id())
+            db_user.key = ndb.Key('User', user.user_id())
+            db_user.put()
+            self.redirect('/token')
+
+    @classmethod
+    def get_current_user_from_database(cls):
+        user = users.get_current_user()
+        return User.get_by_id(user.user_id())
+
+
+class HomeHandler(BaseHandler):
+    def get(self):
+        g = Github(login_or_token=TOKEN)
+        o = g.get_organization(ORG)
+        teams = sorted([team.name for team in o.get_teams()])
+        template_values = {
+            'team_name': 'Home',
+            'logout_url': self.logout_url,
+            'teams': teams,
+        }
+        self.response.out.write(template.render(os.path.join(TEMPLATE_DIR, 'home.html'), template_values))
+
+    def post(self):
+        team = self.request.get('teamSelect')
+        self.redirect('/%s' % team)
+
+
+class TokenHandler(BaseHandler):
+    def get(self):
+        template_values = {
+            'team_name': 'Access Token',
+            'logout_url': self.logout_url,
+        }
+        self.response.out.write(template.render(os.path.join(TEMPLATE_DIR, 'token.html'), template_values))
+
+    def post(self):
+        token = self.request.get('tokenInput')
+        if token:
+            user = users.get_current_user()
+            db_user = User.get_by_id(user.user_id())
+            db_user.github_token = token
+            db_user.put()
+            self.redirect('/')
+        else:
+            self.redirect('/token')
+
+
+class DashHandler(BaseHandler):
     def get(self, team_name):
         template_values = {
             'team_name': team_name,
+            'logout_url': self.logout_url,
         }
+        print self.user
         self.response.out.write(template.render(os.path.join(TEMPLATE_DIR, 'dash.html'), template_values))
 
 
-class MembersHandler(webapp2.RequestHandler):
+class MembersHandler(BaseHandler):
     def get(self, team_name):
         g = Github(login_or_token=TOKEN)
         o = g.get_organization(ORG)
@@ -60,7 +147,7 @@ class MembersHandler(webapp2.RequestHandler):
         self.response.out.write(template.render(os.path.join(TEMPLATE_DIR, 'partials/members-partial.html'), template_values))
 
 
-class PRsHandler(webapp2.RequestHandler):
+class PRsHandler(BaseHandler):
     def get(self, team_name):
         g = Github(login_or_token=TOKEN)
         o = g.get_organization(ORG)
@@ -88,8 +175,17 @@ class PRsHandler(webapp2.RequestHandler):
         }
         self.response.out.write(template.render(os.path.join(TEMPLATE_DIR, 'partials/prs-partial.html'), template_values))
 
+
+class User(ndb.Model):
+
+    user_id = ndb.StringProperty()
+    github_token = ndb.StringProperty()
+
 app = webapp2.WSGIApplication([
+    webapp2.Route('/', handler=HomeHandler),
+    webapp2.Route('/token', handler=TokenHandler),
     webapp2.Route('/<team_name>', handler=DashHandler, name='team_name'),
     webapp2.Route('/<team_name>/members', handler=MembersHandler, name='team_name'),
     webapp2.Route('/<team_name>/prs', handler=PRsHandler, name='team_name'),
+    webapp2.Route('/*', handler=HomeHandler),
 ], debug=True)
