@@ -4,22 +4,55 @@
 {% if pulls %}
 <table class="table table-striped">
     <tbody>
-    {% for pull in pulls %}
-    <tr>
-        <td>
-            <img src="img/{{ pull.state }}.png" height="21">
-        </td>
-        <td>
-            <a href="{{ pull.url }}" target="_blank">{{ pull.repo }} #{{ pull.number }}: {{ pull.title }}</a>
-        </td>
-        <td>
-            <i class="fa fa-comment-o" aria-hidden="true"></i> {{ pull.comments }}
-        </td>
-        <td>
-            <a href="https://github.com/{{ pull.user.login }}" target="_blank">{{ pull.user.login }}</a>
-        </td>
-    </tr>
-    {% endfor %}
+        {% for pull in pulls %}
+        <tr>
+            <td>
+                <img src="img/{{ pull.state }}.png" height="21">
+            </td>
+            <td>
+                <a href="{{ pull.url }}" target="_blank">{{ pull.repo }} #{{ pull.number }}: {{ pull.title }}</a>
+            </td>
+            <td>
+                <i class="fa fa-comment-o" aria-hidden="true"></i> {{ pull.comments }}
+            </td>
+            <td>
+                <a href="https://github.com/{{ pull.user.login }}" target="_blank">{{ pull.user.login }}</a>
+            </td>
+        </tr>
+        {% endfor %}
     </tbody>
 </table>
+<ul class="pager">
+    {% if page > 0 %}
+        <li><a href="#" id="prevButton" onclick="prevPage()">Previous</a></li>
+    {% endif %}
+        Page {{ page|add:1 }}
+        <li><a href="#" id="nextButton" onclick="nextPage()">Next</a></li>
+</ul>
 {% endif %}
+
+
+<script>
+    function nextPage() {
+        clearInterval(interval);
+        $("#nextButton").text("Loading...");
+        $("#prs-partial").load(window.location.pathname + "/prs/{{ page|add:1 }}");
+    }
+
+    function prevPage() {
+        clearInterval(interval);
+        $("#prevButton").text("Loading...");
+        $("#prs-partial").load(window.location.pathname + "/prs/{{ page|add:-1 }}");
+    }
+
+    function reloadPRs() {
+        if ({{ page|safe }} === 0){
+            clearInterval(interval);
+            $("#prs-partial").load(window.location.pathname + "/prs");
+        }
+    }
+
+    var interval = setInterval(function() {
+        reloadPRs();
+    }, 60000);
+</script>

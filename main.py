@@ -148,7 +148,11 @@ class MembersHandler(BaseHandler):
 
 
 class PRsHandler(BaseHandler):
-    def get(self, team_name):
+
+    page_size = 5
+    curr_page = 0
+
+    def get_prs_for_range(self, team_name, start, end):
         g = Github(login_or_token=TOKEN)
         o = g.get_organization(ORG)
         teams = o.get_teams()
@@ -159,19 +163,37 @@ class PRsHandler(BaseHandler):
                 team = None
         team_name_encoded = team_name.lower().replace(' ', '-')
         query_string = "team:%s/%s is:pr" % (ORG, team_name_encoded)
-        results = g.search_issues(query_string, sort="updated")
+        results = g.search_issues(query_string, sort="updated")[start:end]
         pulls = [{
-            'title': pull.title,
-            'url': pull.html_url,
-            'state': pull.state,
-            'number': pull.number,
-            'user': pull.user,
-            'repo': pull.repository.name,
-            'comments': pull.comments,
-        } for pull in results[:5]]
+                     'title': pull.title,
+                     'url': pull.html_url,
+                     'state': pull.state,
+                     'number': pull.number,
+                     'user': pull.user,
+                     'repo': pull.repository.name,
+                     'comments': pull.comments,
+                 } for pull in results]
+        return pulls
+
+    def get(self, team_name):
+        pulls = self.get_prs_for_range(team_name, 0, self.page_size)
         template_values = {
-                'org': ORG,
-                'pulls': pulls,
+            'org': ORG,
+            'pulls': pulls,
+            'page': 0,
+        }
+        self.response.out.write(template.render(os.path.join(TEMPLATE_DIR, 'partials/prs-partial.html'), template_values))
+
+    def get_page(self, team_name, page):
+        start = int(page) * int(self.page_size)
+        end = int(start) + self.page_size
+        print '%s, %s, %s' % (page, start, end)
+        pulls = self.get_prs_for_range(team_name, start, end)
+        self.curr_page = page
+        template_values = {
+            'org': ORG,
+            'pulls': pulls,
+            'page': self.curr_page,
         }
         self.response.out.write(template.render(os.path.join(TEMPLATE_DIR, 'partials/prs-partial.html'), template_values))
 
@@ -187,5 +209,6 @@ app = webapp2.WSGIApplication([
     webapp2.Route('/<team_name>', handler=DashHandler, name='team_name'),
     webapp2.Route('/<team_name>/members', handler=MembersHandler, name='team_name'),
     webapp2.Route('/<team_name>/prs', handler=PRsHandler, name='team_name'),
+    webapp2.Route('/<team_name>/prs/<page>', handler=PRsHandler, name='team_name', handler_method='get_page'),
     webapp2.Route('/*', handler=HomeHandler),
 ], debug=True)
