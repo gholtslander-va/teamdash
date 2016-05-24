@@ -19,7 +19,6 @@ import os
 import webapp2
 from github import Github
 from google.appengine.ext import ndb
-from google.appengine.ext import db
 from google.appengine.ext.webapp import template
 from google.appengine.api import users
 
