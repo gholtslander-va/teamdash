@@ -164,15 +164,19 @@ class PRsHandler(BaseHandler):
         team_name_encoded = team_name.lower().replace(' ', '-')
         query_string = "team:%s/%s is:pr" % (ORG, team_name_encoded)
         results = g.search_issues(query_string, sort="updated")[start:end]
-        pulls = [{
-                     'title': pull.title,
-                     'url': pull.html_url,
-                     'state': pull.state,
-                     'number': pull.number,
-                     'user': pull.user,
-                     'repo': pull.repository.name,
-                     'comments': pull.comments,
-                 } for pull in results]
+        pulls = []
+        for pull in results:
+            repo = g.get_repo(pull.repository.id)
+            pr = repo.get_pull(pull.number)
+            pulls.append({
+                'title': pull.title,
+                'url': pull.html_url,
+                'state': 'merged' if pr.is_merged() else pull.state,
+                'number': pull.number,
+                'user': pull.user,
+                'repo': pull.repository.name,
+                'comments': pull.comments,
+            })
         return pulls
 
     def get(self, team_name):
