@@ -148,7 +148,7 @@ class MembersHandler(BaseHandler):
 
 class PRsHandler(BaseHandler):
 
-    page_size = 5
+    page_size = 7
     curr_page = 0
 
     def get_prs_for_range(self, team_name, start, end):
