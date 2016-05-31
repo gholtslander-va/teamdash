@@ -17,16 +17,10 @@ Currently, it lists the members and recent pull requests of a given GitHub team.
 
 ## Usage
 
-The app is currently hosted at [http://teamdash-1309.appspot.com/](http://teamdash-1309.appspot.com/)
+The app is currently hosted at [https://vendasta-team-dashboard.appspot.com](https://vendasta-team-dashboard.appspot.com)
 
 When you go to the page, you will need to sign in with your Vendasta Google account.
-
-The first time you log in, you will need to create a GitHub personal access token to allow
-the app to access the required org/team/repo/pr information.  To create your token, click the
-"Click here" link at the top of the page (shown below), and choose "Generate Token".
-Then, copy and page the token into "Paste token here" box, and submit.
-
-![Token page](img/screen2.png)
+After logging in, you will need to authorize your Vendasta Github account.
 
 You will then be taken to a team selection page.  Choose your team from the dropdown
 and click submit.
