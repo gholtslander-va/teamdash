@@ -29,19 +29,17 @@
     <div class="container-fluid">
         <div class="navbar-header">
             {% if team_name == "Home" %}
-            <a class="navbar-brand" href="/">
+            <span class="navbar-brand">{{ team_name }}</span>
             {% else %}
             <a class="navbar-brand" href="/{{ team_name }}">
-            {% endif %}
                 {{ team_name }}
             </a>
+            {% endif %}
         </div>
-        {% if logout_url %}
-            <ul class="nav navbar-nav navbar-right">
-                <li><a href="/">Home</a></li>
-                <li><a href="/token">Token</a></li>
-                <li><a href="{{ logout_url }}">Log Out</a></li>
-            </ul>
+        {% if not team_name == "Home" %}
+        <ul class="nav navbar-nav navbar-right">
+            <li><a href="/">Home</a></li>
+        </ul>
         {% endif %}
     </div>
 </nav>
